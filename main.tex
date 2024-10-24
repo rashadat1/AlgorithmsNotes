@@ -1,0 +1,282 @@
+\documentclass{scrartcl}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz-cd}
+\usepackage{MnSymbol}
+\newcommand{\BQ}{\mathbf{Q}}
+\newcommand{\BZ}{\mathbf{Z}}
+\newcommand{\BC}{\mathbf{C}}
+\newcommand{\BR}{\mathbf{R}}
+\newcommand{\BF}{\mathbf{F}}
+\newcommand{\BN}{\mathbf{N}}
+\newcommand{\Cl}{\mathrm{Cl}}
+\newcommand{\Frob}{\mathrm{Frob}}
+
+\newcommand{\vol}{\mathrm{vol}}
+
+\NewEnviron{thm*}[1][]{
+	\vspace{10pt}\newline\noindent\ignorespaces\hspace*{-12.5pt}\schema{}{\vspace{-7.5pt}\begin{theorem*}[#1]\BODY\newline\noindent$\square$\end{theorem*}\vspace{-7.5pt} }\ignorespacesafterend\leavevmode\vspace{12.5pt}\newline
+}
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem*{theorem*}{Theorem}%
+\newtheorem*{proposition}{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{postulate}[theorem]{Postulate}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+\newtheorem*{notation}{Notation}
+\newtheorem*{note}{Note}
+
+\title{Algorithms Notes}
+\author{Tarik Rashada}
+\numberwithin{equation}{section}
+
+\begin{document}
+\maketitle
+These notes are taken from the text Introduction to Algorithms by Thomas H. Coremen and represent my effort to learn  algorithms and their role in computing and computer science from the ground up.
+{\color{black}\tableofcontents}
+\newpage
+\section{Introduction}
+\subsection{Computing Time Efficiency}
+Two algorithms for the same problem are likely to have dramatically different efficiencies. Typically in computing by efficiency we mean time and space (memory) efficiency. Because both memory and computing time are finite resources we want to do everything we can to write algorithms that are efficient. E.g. - among the algorithms that exist for sorting, there are insertion sort and merge sort. Insertion sort takes roughly $c_1n^2$ while merge sort takes roughly $c_2n\log n$ time to run. For small input sizes $n_1$ and $n_2$, because, typically $n_2 > n_1$ Insertion sort tends to be faster but merge sort is much much faster for larger inputs. No matter how much smaller $c_1$ is there will always be an inflection point. Note that for $n = 1000$, we would have $c_1\cdot 10^6$ for insertion sort but only $c_2\cdot 10^4$ for merge sort ($100$ times faster). \\
+\\
+This can be even more drastically demonstrated. Suppose we have a computer A which can execute $10$ billion instructions per second (faster than any single non-sequentialized computer in existence) and a computer B which can only execute $10$ million instructions per second and we have both computers run a sorting algorithm on an array of $10^6$ numbers. We have computer A run insertion sort and computer B run merge sort. Suppose the programmer for computer A codes insertion sort in machine language so the resulting code requires $2n^2$ instructions and computer B is given code written in a high-level language with an inefficient compiler so that it takes $50n\log n$ instructions for merge sort. \\
+For computer A we would have:
+\begin{equation}
+\frac{2\cdot{10^7}^2\text{ instructions}}{10^10\text{ instructions/second}} = 20,000\text{ seconds}
+\end{equation}
+For computer B we would have:
+\begin{equation}
+    \frac{50\cdot{10^6}{\log{10^6}}\text{ \instructions}}{10^7\text{ instructions/second}} = 1163\text{ seconds}
+\end{equation}
+
+Hence even using a less efficient language and far slower computer, because of how fast the algorithm grows compared to merge sort - insertion sort takes more than 5.5 hours while merge sort only takes around 20 minutes!\\
+This is why we care about algorithms and efficiency.
+\subsection{Exercises}
+\begin{itemize}
+1. Give an example of an application that requires algorithmic content at the application level.\\
+Some answers could be Google and its page rank algorithm; Netflix recommendation systems; Amazon dynamic pricing; Airbnb recommendation and pricing; Uber route finding, dynamic pricing, and cost setting
+2. Suppose we are comparing implementations of insertion sort and merge sort on the same machine. For inputs of size n, insertion sort runs in $8n^2$ steps, while merge sort runs in $64n\log n$ steps. For which values of n does insertion sort beat merge sort?\\
+Simplify 
+\begin{align}
+8n^2<64n\log n\\
+    n<8\log n\\
+\end{align}
+\end{itemize}
+
+\section{Getting Started}
+\subsection{Insertion Sort}
+The first algorithm we will investigate is insertion sort - which solves the sorting problem discussed previously. Phrased formally:\\
+Give a sequence of $n$ real numbers $\langle{a_1,a_2,...,a_n}\rangle$ we want to find the permutation (reordering of the elements of the sequence, such that we have $a_i < a_{i+1}$
+for all $i$ in $[1,n-1]$. The examples we will see throughout our study will often be written in pseudocode. Note that pseudocode is not really concerned with the issues of software engineering - modularity, error handling, abstraction - so that we can convey the essence of an algorithm concisely. Insertion Sort works in the following way: 1) Given an unsorted number of elements we construct a new collection by one at a time selecting elements from the unsorted list and comparing, from right to left, the elements in our new collection - inserting the elements taken from the unsorted list in their correct positions by comparing against all of the sorted elements. Because, in the worst case, we have to compare each of the $n$ elements of the unsorted list to the other $n-1$ elements of the collection - the time complexity is $O(n^2)$. The space complexity can be made $O(1)$ by sorting the elements in-place.
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.5\textwidth]{Screenshot 2024-09-17 at 1.41.35 PM.png}
+\caption{Insertion Sort in Action}
+\end{figure}
+In the above note that in each step we are taking the highlighted dark square element and placing it into the list. We place every element where it belongs in sorted order for every element of the array besides the first. Pseudocode for Insertion Sort:
+\begin{itemize}
+    1. for $j = 1$ to A.length \\
+    2.     \hspace{1cm}key = $A[j]$\\
+    3.     \hspace{1cm}$i = j - 1$ \\
+    4.     \hsapce{1cm}// Insert $A[j]$ into the sorted sequence $A[0,j-1]$ (all elements to the left of $A[j]$ are sorted \\
+    5.     \hspace{1cm}while i $\geq$ 0 and A[i] $>$ key \\
+    6.         \hspace{2cm}A[i + 1] = A[i] \\
+    7.         \hspace{2cm}$i = i - 1$ \\
+    8.     \hspace{1cm}$A[i + 1] =$ key
+\end{itemize}
+Compare the key to the element to the left of it - if key smaller swap the location previously occupied by key and compare key to the next element to the left. We continue this until we either reach the left end or find a place where key can go. \\
+\\
+We call the subarray $A[0,j-1]$ a loop invariant because at the start of each iteration of the for loop the subarray always consists of the elements originally in $A[0,j-1]$ but in sorted order. Loop invariants are used to understand why an algorithm is correct. In order to prove a loop invariant we must prove 1) Initialization: true beforethe first iteration of the loop. 2) Maintenance: true before an iteration of the loop. 3) Termination: when the loop terminates the loop gives us some useful property that helps show that the algorithm is correct. This is similar to induction. Initialization is the base case and Maintenance is analogous to showing that it holds true after an inductive step.
+$\left(\frac{a}{b}\right)$
+\subsection{Analyzing Algorithms}
+Analyzing an algorithm means predicting the resources that it will require. Occasionally this means memory, communication bandwidth, or computer hardware. Usually this refers to computational time as the thing we want to measure. By analyzing several candidate algorithms for a problem we can identify a most efficient one. For most of the purposes of these notes, we will assume a generic one processor Random-Access Machine (RAM) model of computation for our implementation technology and understand that our algorithms will be implemented as computer programs. In this model instructions are executed one after another with no concurrent operations. \\
+The RAM Model contains instructions commonly found in real computers - arithmetic, data movement, and control operations each of which takes a constant amount of time. The data types in the RAAM model are integer and floating point. We limit the size of each word of data. When working with inputs of size $n$ we typically assume integers are represented by $c\log_2n$ buts for some constant $c\geq1$. Other conventions include $2^k$ is treated as a constant-time operation. This can be true as when $k$ is small enough most computers consider this a constant time "shift left" instruction because it basically means we shift all bits by $k$ positions to the left which computers can often do in constant time. There are more complicated computational models that more accurately capture how computation works - including effects like memory-hierarchy which can sometimes be quite important on real programs on real machines. However, we find that despite alternatives be quite a but more complicated, the RAM model does a pretty good job of predicting actual performance.
+\subsubsection{Analysis of insertion sort}
+Before analyzing this algorithm we should carefully define what we mean by input size and running time. In general the time taken by an algorithm grows with the size of the input. Best notion for input size depends on the problem. It can mean the number of items in the input (i.e. size of array for sorting). It can also mean the total number of bits needed to represent the input to the algorithm in binary representation.\\
+Running time is the number of "primitive" operations or steps that are executed. Let's define running time in the following sense - a constant amount of time $c_i$ is required to execute the $i$th line of our pseudocode. For each line wrapped in a for or while loop we will have to execute multiple times. 
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.5\textwidth]{Screenshot 2024-10-11 at 8.51.21 AM.png}
+\caption{Insertion Sort Runtime}
+\end{figure}
+The best-case of this algorithm is if the array is already sorted. In this case, line $5$ is only executed once per element of the array (besides the first element so $n-1$ times) because we find $A[i]\leq$key. And because this condition is always False in line $5$ - lines $6$ and $7$ are not executed and this takes us to line $8$ which is also then executed $n-1$ times leaving us with the following:
+\begin{align}
+    T(n) = c_1n + c_2(n-1) + c_4(n-1) + c_5(n-1) + c_8(n-1)
+\end{align}
+So the best-case running time is a linear function of $n$. The worst-case is an array sorted in reverse order. In this case, we would have to perform, for the $j$th element of the array, $j-1$ swaps. In particular we would see each of the expressions in lines $6$ and $7$ would be executed $j-1$ times for the $j$th element so these terms would look like $\sum_{j=2}^n(j-1)$ while the expression in line $5$ would be evaluated $j$ times for the $j$th element (the reason for the difference is at the end of the loop - when it breaks (that is when the element gets to its correct position) we have to evaluate the while loop condition one last time still to determine the break occurred and at this point we would not execute lines $6$ and $7$. So for this term we have $\sum_{j=2}^nj$. Using basic sum formulas we know that
+$$\sum_{j=2}^n(j-1)=\frac{n(n-1)}{2}$$
+and
+$$\sum_{j=2}^nj=\frac{n(n+1)}{2}-1.$$
+We can conclude that the expression for worst-case running time is quadratic in $n$. For the remainder of our study we will typically focus on finding the worst-case running time. The reason why is this gives us an upper bound on the run time of any given input - which means we can guarantee that the algorithm will never take any longer. For some algorithms the worst-case occurs fairly often - e.g. searching a database for a particular record has worst-case occurrence when the information is simply not in the database. This may be frequent. The third reason is the "average case" is often roughly as bad as the worst case. E.g. suppose that we have a half-sorted array so we have to perform approximately $j/2$ swaps each time (so $t_j=j/2$). Then the time complexity is still $n^2$ just with a smaller coefficient.
+\subsubsection{Order of Growth}
+We used a couple of simplifying abstractions to extract our understanding of the worst and best-case of the INSERTIONSORT algorithm. 1) We ignored the actual time cost of each line of code using constants $c_i$. 2) We ultimately threw these constants aside and only focused on the order of the resulting polynomial function.\\
+\\
+The third abstraction is that it is the order of the growth of the running time that we are actually interested in. Therefore we only consider the leading term of a formula $an^2$ for instance because the lower-order terms are roughly insignificant for large values of $n$. For insertion sort we are left with a leading term of $an^2$ so we can conclude that the worst-case running time is $\Theta(n^2)$. Because of constant factors and lower order terms, it is possible that a running time with a lower order of growth might take less time for smaller inputs (we saw this in the comparison of insertion sort and merge sort in the previous section). But we expect that for large enough inputs - e.g. - a $\Theta(n^2)$ algorithm will be faster than a $\Theta(n^3)$ algorithm in the worst-case.\\
+\\
+\subsubsection{Big-O vs Big-Theta (Informal)}
+When we analyze algorithms we may use $O$ (Big-O) or $\Theta$ (Big-Theta) (there are also other choices of describing time complexity but these are the most common). By Big-Theta we mean that the runtime is bounded from above and from below by a function of this order just with different constants (that is it is a tight bound). So Insertion Sort being Big-Theta in the worst-case (we can use Big-Theta to refer to not just the worst-case - the average or best case too. While Big-O is not used with such a suffix) means that $n^2$ is a tight bound. Big-O need not be a tight bound on the run time. Insertion Sort is also $O(n^100)$ but obviously this is such a poor bound that it doesn't provide any information. So if we state Big-O with a well calculated upper bound then they can coincide. 
+\subsection{Designing Algorithms}
+There are a wide variety of algorithmic design techniques. Insertion sorted was designed with an incremental approach - starting with a sorted subarray $arr[1,...,j-1]$ we inserted the element $arr[j]$ into its correct location in this subarray iteratively, by comparing it to the elements in the sorted subarray until we have sorted the entire array $arr$. Another approach is called divide-and-conquer which we will use to design a sorting algorithm with worst-case runtime significantly faster than insertion sort.
+\subsubsection{The divide-and-conquer approach}
+Many useful algorithms are recursive - that is to solve the problem - they call themselves recursively one or more times to deal with smaller problems. This is the divide-and-conquer approach - break the problem into several subproblems similar to the original problem but smaller in size, solve the subproblems, then combine the solutions to solve the original problem.\\
+MERGE SORT follows the divide-and-conquer paradigm by: first dividing the $n$-element array into two subsequences of length $n/2$ each. Then sorting the subsequences recursively using merge sort, and finally merging the two sorted subsequences to produce the final answer. The MERGE procedure - combining the two sorted subsequences takes time $\Theta(n)$. We do this by simply comparing the first two elements of the sorted subsequences and placing the smaller into the correct position and doing this repeatedly until we have looped through both subsequences. This takes $\Theta(n)$ because the total number of elements to be merged will be $n$.\\
+The MERGE procedure works in the following way:\\
+1) Calculate the length of the two subarrays $n_1$ and $n_2$.\\
+2) Create arrays $L$ (left) and $R$ (right) of length $n_1+1$ and $n_2+1$ where the extra position in each array holds a sentinel $L[n_1+1]=\infty$ and $R[n_2+1]=\infty$. \\
+3) A for loop copies the subarray $arr[p:q]$ into $L[1:n_1]$ and $arr[q+1:r]$ into $R[1:n_2]$. \\
+We perform the $n=r-p+1$ basic steps by maintaining the loop invariant:\\
+At the start of each iteration of the for loop (that compares the elements of $L$ and $R$ and replaces the elements of $arr$ in-place with the smaller of the two elements of the subarrays iteratively) the subarray $arr[p:k-1]$ contains the $k-p$ smallest elements of $L$ and $R$ in sorted order. Moreover $L[i]$ and $R[j]$ are the smallest elements of their arrays that have not been copied back into $arr$. 
+\\
+MERGE runs in $\Theta(n)$ time because the beginning steps in $1$ each take constant time. Then the for loops in $2$ each take linear time. Finally the for loop in $3$ takes linear time as well. The procedure MERGE-SORT$(A,p,r)$ sorts the elements in the subarray $A[p:r]$. The divide step computes an index $q$ that partitions this array into two subarrays $A[p:q]$ containing $\lceil{n/2}\rceil$ elements and $A[q+1:r]$ containing $\lfloor{n/2}\rfloor$ elements. The algorithm then look like this:
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.5\textwidth]{Screenshot 2024-10-11 at 11.31.56 AM.png}
+\end{figure}
+\\
+\\
+We call MERGE-SORT initially on the whole array to form to subarrays. Then we perform MERGE-SORT on each subarray recursively (until we reach the base case $p\leq r$ which occurs when the subarray we call on has $1$ or $0$ elements. Then we apply MERGE to the sorted subarrays. 
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.5\textwidth]{Screenshot 2024-10-11 at 11.23.54 AM.png}
+\caption{Operation of Merge Sort on an array $A=\langle{5,2,4,7,1,3,2,6}\rangle$}
+\end{figure}
+As for the runtime, we calculate the runtime of a divide-and-conquer algorithm by breaking it up into its component parts - divide, conquer, merge. Let $T(n)$ be the running time of a problem of size $n$. If the problem size is small enough $n\leq c$ for some constant then the solution takes constant time - $\Theta(1)$. Suppose that our division of the problem results in $a$ subproblems each of which is $1/b$ times the size of the original problem (for merge sort $a$ and $b$ are both $2$).Thus, if it takes $T(n/b)$ time to solve a subproblem of size $n/b$, then it takes time $aT(n/b)$ to solve $a$ of them. If it takes time $D(n)$ to divide a problem into subproblems and $C(n)$ to combine the solutions to the subproblems then we get that
+$$T(n)=\begin{cases}
+    \Theta(1), n\leq c\\
+    aT(n/b) + D(n) + C(n), \text{otherwise}
+    
+\end{cases}$$
+Now, speaking of merge sort, remember that the base case was $n\leq1$, in this case the runtime is constant $\Theta(1)$. The divide step consists only of computing the mid point of the subarray which also takes constant time $D(n)=\Theta(1)$. Then recursively solving the two subproblems of size $n/2$ gives us $2T(n/2)$ added to the runtime. Finally the MERGE procedure involves one for loop over the elements of both arrays, which, in the worst case, takes $\Theta(n)$ (it is linear) so $C(n)=\Theta(n)$. We conclude that for merge sort the worst-case run time is given by the recurrence:
+$$T(n)=\begin{cases}
+    \Theta(1), n\leq1\\
+    2T(n/2) + \Theta(n), n>1
+\end{cases}$$
+In a later chapter we shall see that the "master theorem" gives us that $T(n)=\Theta(n\log_2n)$ which implies that for sufficiently large inputs Merge Sort will greater outclass Insertion Sort. We can inductively prove this runtime as follows:\\
+\begin{align}
+    T(n) = 2T(n/2) + n \\
+    T(n/2) = 2T(n/4) + n/2 \\
+    T(n) = 2(2T(n/4)+n/2) + n = 4T(n/4) + n + n \\
+    T(n) = 2^kT(1) + c\sum_{i=1}^k\frac{2^in}{2^{i}} = cn + kcn \\
+    k = \log_2n
+    T(n) = cn + cn\log_2 n
+\end{align}
+
+Hence we can conclude that $T(n)=\Theta(n\log_2n)$.\\
+This is actually one of the problems (2.3.3) in the end of the chapter. 2.3.1 I did, as well as 2.3.2 (I coded up the procedure without the sentinel value), 2.3.5 we will code up and figure out as well (binary search), 2.3.6 we discussed and will include the discussion below. Finally 2.3.7 appears to be a variation of Two-Sum!!!\\
+\\
+For 2.3.6, the reason why using binary instead of linear search does not affect the overall runtime of the algorithm - although it does reduce the runtime of the search part for insertion into the array from linear time to $\log_2n$ time - is because after locating the correct index for the unsorted element we need to shift all elements that are larger than it to the right. This takes linear time. In Insertion Sort the shifting is baked into the algorithm so we neglect the fact that we did this. However, now, after finding the correct location we need to copy all elements of the array larger than the value we are inserting to the right by one place. So the runtime would look like $O(n\cdot(n + \log_2n)=O(n^2)$ where $n$ refers to the fact we are sorting $n$ elements, and the sort for each takes $n$ (to shift) and $\log_2n$ to find its location via binary search.\\
+\\
+Now the question is why does binary search have time complexity $\log_2n$. As before
+we have:
+$$T(n)=\begin{cases}
+    \Theta(1), n\leq c\\
+    aT(n/b) + D(n) + C(n), \text{otherwise}
+\end{cases}$$
+The base case takes constant time because it amounts to checking if the final remaining legal position our value we are searching for could be at is there which is constant time $\Theta(1)$. Again, at each step we break the problem into two subproblems so the first term becomes $T(n/2)$ (the time to solve the subproblem of size $n/2$ - we only need to solve one of the two subproblems because we only solve the subproblem that can contain the value), then the time to divide into two subproblems ($D(n)$) is also constant because it amounts to recalculating an index and deciding which subarray to look at. Finally, the time taken to merge the resulting subproblems is zero because we don't merge. We find the solution in one subproblem and we are done. So $C(n)$ is constant. We are left with
+
+$$T(n)=\begin{cases}
+    \Theta(1), n\leq c\\
+    T(n/2)+\Theta(1), \text{otherwise}
+\end{cases}$$
+Then, once again assuming that $n=2^k$ for some k, we have:
+$T(n)=T(1)+kc=T(1) + c\log_2n$ so we have $T(n)=\Theta(\log_2n)$.\\
+\\
+For the final question 2.3.7 we need to describe a $\Theta(n\log_2n)$-time algorithm that, given a set $S$ of $n$ integers and another integer $x$, determines whether or not there exist two elements in $S$ whose sum is exactly $x$.\\
+The algorithm goes as follows:\\
+Given an array arr of length $n$ and a target integer $x$ we do the following:
+\begin{enumerate}
+    \item First sort the array $arr$ using MergeSort which takes time $\Theta(n\log_2n)$.
+    \item Iterate through the array and for each integer $arr[i]$ search the subarray $arr[:i]$ to see if the complement $x - arr[i]$ has already been come across. If we find the complement in the subarray then we are done. 
+    \item If we do not find the complement we continue.
+    \item If we reach the end of the array and we don't see the complement of the final element in the sub array $arr[:arr.length]$, then we are done and know that the sum cannot be formed from two elements of the array.
+\end{enumerate}
+We can see that this algorithm has time complexity $\Theta(S(n) + n\cdot(T(n) + \\ \text{ Time to calculate complement + Time to append complement to array}))$ where $T(n)$ is the time complexity of the search algorithm that we use and $S(n)$ is the time complexity of the sorting algorithm we use. If we use MergeSort $S(n)$ is $n\log_2n$. Now note that this $\text{(Time to calculate complement + Time to append complement to array})$ is constant time complexity so the total time complexity is $\Theta(n\cdot(n\log_2n +n\log_2n))=\Theta(n\log_2n)$.\\
+\\
+Sorting the array beforehand helps us avoid $\Theta(n^2)$ time complexity which we would need if we were performing the search with linear search on an unsorted array. We have two better choices of algorithm however, depending on whether or not our array is sorted or not. For the unsorted approach we have the above described $n\log_2n$ approach which does not use a hashmap. The approach that uses a hashmap is the following:
+\begin{enumerate}
+    \item Create a set / hashmap to store unique elements of the array.
+    \item Iterate through the array and for each element $arr[i]$ check to see if $x - arr[i]$ is in the set.
+    \item If we find that the complement is in the set then we are done.
+    \item If not then we return some null value.
+\end{enumerate}
+
+Because we iterate through the array once and the checking of the hashmap is constant time this algorithm has time complexity $T(n)=\Theta(n)$ so this is an improvement over the unsorted algorithm from before.\\
+\\
+The final algorithm is for a sorted list:
+\begin{enumerate}
+    \item Set left = 0 and right = arr.length - 1.
+    \item Calculate sum = arr[left] + arr[right].
+    \item If sum $>$ target, decrement the right pointer (right$--$).
+    \item If sum $<$ target, increment the left pointer (left$++$).
+    \item If sum $==$ target, return the pair.
+\end{enumerate}
+This is also $\Theta(n)$ as everything takes constant time but we perform these operations for each element of the array $arr$. \\
+\\
+Problem 2-1 describes an improvement on merge sort that leverages Insertion Sort's fast run time for small arrays. For small problems on many machines - because of the sizes of the constant factors InsertionSort actually outperforms MergeSort. Because MergeSort involves splitting the array into smaller and smaller subproblems we can reach a point where it is more efficient to sort the subproblems with InsertionSort. \\
+(a) Because insertion sort's worst-case time is $\Theta(n^2)$ the time taken to sort $n/k$ sublists each of length $k$ is $\Theta(nk)$.\\
+(b) Now the question is how do we merge. If all of these sublists have been sorted with InsertionSort we merge using the two at a time merging algorithm at each level. If we have $n/k$ sublists it would take $\log_2(n/k)$ "levels" to merge all of them (for instance if we had 4 sublists the first level merges them into 2 sublists and the next and last level merges those two into 1 list notice that $4=2^2$ so it is $\log_2(4)=2$ levels). So we have $\log_2(n/k)$ levels. Notice that if we are sorting everything in a level this requires reading each of the elements and doing a comparison. Because we must read every element once in each level to do the merges this means at each level we perform $n$ operations. Hence the total time to merge with this algorithm is $n\log_2(n/k)$. And this means that the total time complexity of the algorithm that involves splitting the initial array into $n/k$ length $k$ sublists is $\Theta(nk + n\log_2(n/k))$
+\section{Growth of Functions}
+When we look at input sizes large enough that only the order of the growth of the running time is relevant - we are studying the asymptotic behavior of algorithms. That is we are interested in how the running time of an algorithm increases with the size of the input as the size of the input increases without bound. Usually an asymptotically more efficient algorithm will be the best choice except possible for small input sizes. \\
+\subsection{Asymptotic Notation}
+Asymptotic notation applies to functions so when we say we are writing the run time of an algorithm in asymptotic notation we mean to say that we are characterizing the function representing the run time of an algorithm, but this is obvious.
+\subsubsection{$\Theta$-notation}
+Earlier we found that the worst-case running time of insertion sort is $T(n)=\Theta(n^2)$. More formally what this notation means is that:\\
+\begin{definition} ($\Theta-$notation) 
+    For a given function $g(n)$, we denote by $\Theta(g(n))$ the set of functions: \\
+    $$\Theta(g(n))=\{f(n):\text{ }\exists c_1,c_2\in\BR\text{ and }n_0\text{ }st\text{ }0\leq c_1 g(n)\leq f(n)\leq c_2g(n),\forall n\geq n_0\}$$
+\end{definition}
+Informally, a function $f(n)$ is in $\Theta(g(n))$ if it is bounded above and below by $c_1g(n)$ and $c_2g(n)$ for some fixed constants $c_1$ and $c_2$ after some value of $n$.
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.5\textwidth]{Screenshot 2024-10-21 at 4.42.58 PM.png}
+\caption{Figure (a) represents $\Theta$ notation. Figure (b) represent Big-$O$. Figure (c) represents $\Omega$.}
+\end{figure}
+Because $\Theta(g(n))$ is a set we write $f(n)\in\Theta(g(n))$ but usually we just write $f(n)=\Theta(g(n))$. $g(n)$ is called an asymptotically tight bound for $f(n)$.\\
+\begin{definition}($O$-notation)
+    While $\Theta$-notation asymptotically bounds a function from above and below, when we only have an asymptotic upper bound - we use $O$-notation (Big-O). For a given function $g(n)$ we define $O(g(n))$ to be the set of functions
+    $$O(g(n))=\{f(n):\exists c\text{ and }n_0\text{ }st\text{ }0\leq f(n)\leq cg(n),\forall n\geq n_0 \}$$
+\end{definition}
+$\Theta$ gives an asymptotically tight upper and lower bound for $f(n)$ while $O$ gives an asymptotic upper bound. For all values to the right of $n_0$ $f(n)$ is bounded above by some fixed constant $c$ multiple of $g(n)$. Obviously $f(n)=\Theta(g(n))$ implies that $f(n)=O(g(n))$. In our notation $an^2+bn+c=O(n^{100})$ we don't necessarily mean that $O$ gives a tight upper bound just that a constant multiple of $g(n)$ is a upper bound on $f(n)$ with no claim on how tight an upper bound it is. We must distinguish between asymptotic upper bounds and asymptotically tight bounds.  \\
+Because $O$-notation describes an upper bound, when we use it to bound the worst case running time of an algorithm we have a bound on the running time of the algorithm on every input. Thus $O(n^2)$ bound on worst-case running time of insertion sort also applies to its running time on every input. The $\Theta(n^2)$ bound on the worst-case running time of insertion sort, does not imply a $\Theta(n^2)$ bound on the running time of insertion sort on every input.\\
+Clearly when the input is already sorted insertion sort runs in $\Theta(n)$ - this is the best-case in which case we do not have that the $\Theta(n^2)$ bound works. \\
+\\
+It is an abuse to say that the running time of insertion sort is $O(n^2)$ because for a given $n$, the runtime depends on the particular input of length $n$. Typically when we talk about the runtime of an algorithm we are interested in bounds on the worst-case scenario. For insertion sort the worst-case running time is $O(n^2)$ (even stronger it is $\Theta(n^2)$). But notice that We have to be precise on which run time we mean because although we have $\Theta(n^2)$ bound on the worst-case this does not imply that the run time is $\Theta(n^2)$ for all inputs.\\
+\begin{definition}($\Omega$-notation)
+    Just as $O$-notation provides an asymptotic upper bound, $\Omega$-notation provides an asymptotic lower bound. For a given function $g(n)$, $\Omega(g(n))$ is the set of functions below
+    $$\Omega(g(n))=\{f(n):\exists c\text{ and }n_0\text{ st }0\leq cg(n)\leq f(n),\forall{n}\geq n_0\}$$
+\end{definition}
+The following theorem naturally follows from the definitions of $\Omega$, $O$, and $\Theta$
+\begin{theorem}
+    For any two functions $f(n)$ and $g(n)$ $f(n)=\Theta(g(n))$ if and only if $f(n)=O(g(n))$ and $f(n)=\Omega(g(n))$.\\ \\
+    This theorem means that we can prove that a function $f(n)$ is in $\Theta(g(n))$ if it is in $O(g(n))$ and $\Omega(g(n))$.
+\end{theorem}
+When we say that the running time (no modifier - best-case, worst-case, average-case - of an algorithm is $\Omega(g(n))$ then we mean that no matter what particular input of size $n$ is chosen, the running time of the algorithm on the input is at least a constant times $g(n)$ for sufficiently large $n$. In a sense - this gives a lower bound on the best-case of the algorithm if this is the lower bound for all runtimes. Insertion sort's runtime is $\Omega(n)$ for all cases of input of size $n$. The running time of insertion sort (no modifier once again) belongs to $\Omega(n)$ and $O(n^2)$ because it falls somewhere between a linear function and a quadratic function we cannot make a statement about the general runtime in terms of $\Theta$-notation. These bounds are asymptotically as tight as possible. Note that, however, we can say that the worst-case run time is $\Theta(n^2)$.\\
+\begin{definition}($o$-notation)
+    The asymptotic upper bound provided by $O$-notation may or may not be asymptotically tight. We use $o$-notation (little-o) notation to denote an upper bound that is not asymptotically tight. Formally
+    $$o(g(n))=\{f(n):\forall c,\exists n_0\text{ st }0\leq f(n)<cg(n),\forall n\geq n_0\}$$
+    The difference with Big-$O$ is that Big-$O$ holds that there exists a constant $c>0$ such that $0\leq f(n)\leq cg(n)$ but for little-$o$ we are saying that $0\leq f(n)<cg(n)$ for all $c$. What this means is that, we can choose arbitrarily small $c>0$ and we would have $g(n)>f(n)$. Notice if we divide
+    $$\frac{f(n)}{g(n)}<c$$ but $c>0$ so we can take this in the limit $c\rightarrow0$ and $n\rightarrow\infty$ basically $f(n)$ becomes completely insignificant relative to $g(n)$ in terms of order of growth.
+\end{definition}
+\begin{definition}($\omega$-notation)
+    Analogously, $\omega$-notation is used to denote a lower bound that is not asymptotically tight. We can define it by saying that $f(n)=\omega(g(n))\iff g(n)=o(f(n))$ which is clear. We have
+    $$\omega(g(n))=\{f(n):\forall c,\exists n_0\text{ st }0\leq cg(n)<f(n),\forall n\geq n_0\}.$$
+    Similarly we also have that if $f(n)=\omega(g(n))$ then $$\lim_{n\rightarrow\infty}\frac{f(n)}{g(n)}=\infty$$
+    if the limit exists. $f(n)$ becomes arbitrarily large relative to $g(n)$ as $n$ tends toward infinity. 
+\end{definition}
+\section{Divide-and-Conquer}
+Earlier we saw how merge sort serves as a great example of the divide-and-conquer paradigm. In divide-and-conquer we solve a problem recursively applying these steps at each level of the recursion:\\
+\begin{itemize}
+    Divide: the problem into a number of subproblems that are smaller instances of the same problem.\\
+    Conquer: the subproblems by solving them recursively. If the subproblem sizes are small enough, however, just solve the subproblems in a straightforward manner (base case).\\
+    Combine: the solutions to the subproblems into a solution for the original problem.
+\end{itemize}
+When the recursion "bottoms out" and we no longer recurse because the problem is small enough - we say we have reached the base case. We shall see more instances of divide-and-conquer in this section including the maximum-subarray problem - finds the contiguous subarray whose values have the greatest sum. Next we shall see two algorithms for multiplying $nxn$ matrices. One algorithm runs in $\Theta(n^3)$ time which is no better than straightforwardly multiplying them together. The other algorithm Strassen's algorithm runs in $O(n^{2.81})$ which asymptotically is an improvement.  
+
+\end{document}
