@@ -278,5 +278,50 @@ Earlier we saw how merge sort serves as a great example of the divide-and-conque
     Combine: the solutions to the subproblems into a solution for the original problem.
 \end{itemize}
 When the recursion "bottoms out" and we no longer recurse because the problem is small enough - we say we have reached the base case. We shall see more instances of divide-and-conquer in this section including the maximum-subarray problem - finds the contiguous subarray whose values have the greatest sum. Next we shall see two algorithms for multiplying $nxn$ matrices. One algorithm runs in $\Theta(n^3)$ time which is no better than straightforwardly multiplying them together. The other algorithm Strassen's algorithm runs in $O(n^{2.81})$ which asymptotically is an improvement.  
+\subsection{Recurrences}
+Recurrences go hand-in-hand with divide-and-conquer. The reason is because it gives us a natural way to characterize the running times of divide-and-conquer algorithms. A recurrence is an equation that describes a function in terms of its value on smaller inputs.\\
+In the examples we have seen so far, our recurrence relations have reduced our problem into subproblems which were a constant size of the original problem size - e.g. in Binary Search we reduced the problem of size $n$ into a subproblem of size $n/2$ at each step. But it is not the case that the subproblem must be a constant fraction of the original problem.\\
+In this section we discuss three methods for solving recurrences - obtaining asymptotic bounds on the solution:\\
+The substitution method\\
+The recursion-tree method\\
+The master method
+\\
+\\
 
+The master method is used to provide bounds for recurrences of the form $T(n)=aT(n/b) + f(n)$ where this characterizes a divide-and-conquer problem that divides our problem into $a$ subproblems each of size $n/b$ and where the divide and combine operations take time $f(n)$. Sometimes we will see recurrences that are written as inequalities rather than equalities. In this case the solution is either a statement in $O$-notation or $\Omega$-notation rather than $\Theta$-notation as we have been using previously.\\
+\\
+\subsection{The Maximum-Subarray Problem}
+This is the same as the best time to buy and sell stock problem that often appears in coding interviews. \\
+Given an array $arr$ of both positive and negative integers, we want to find the maximal difference between elements of $arr$ such that the second integer is in the subarray $arr[i:]$ if $arr[i]$ is the first element.\\
+\\
+We can easily devise a brute-force solution to this problem - we just try every possible pair of "buy" and "sell" dates in which the "buy" date precedes the "sell" date. If there are $n$ dates - then we have $\binom{n}{2}$ pairs clearly. Because $\binom{n}{2}$ is $\Theta(n^2)$ and the best we can hope for is to evaluate each pair in constant time it follows that our solution has $\Omega(n^2)$.\\
+\\
+The divide-and-conquer approach would be to - instead of looking at the daily prices - consider the daily change in price. Where the $i$th value is the difference in price between $arr[i+1]-arr[i]$. Now we want to find the nonempty, contiguous subarray of A whose values have the largest sum. This contiguous subarray is called the maximum subarray.\\
+At first this transformation doesn't appear to help as we still need to check $\binom{n-1}{2}=\Theta(n^2)$ subarrays.\\
+\\
+The maximum-subarray problem is interesting only when the array contains some negative numbers - if all array entries are nonnegative then the maximum-subarray problem is the entire solution is the entire array.\\
+Now let's consider how we would solve this with divide-and-conquer. We want to find the maximum subarray of the array $arr[l:r]$. Divide-and-conquer suggests that we divide the subarray into two subarrays of as equal size as possible. We need to find a midpoint $m$ of the subarray and then consider the subarrays $arr[l:m]$ and $arr[m+1:r]$. Any contiguous subarray $arr[i:j]$ of $arr[l:r]$ must lie in one of three places:
+\begin{enumerate}
+    \item Entirely in the subarray $arr[l:m]$
+    \item Entirely in the subarray $arr[m+1:r]$
+    \item Crossing the midpoint so that $l\leq i\leq mid < j\leq r$
+\end{enumerate}
+A maximum subarray of $arr[l:r]$ must have the greatest sum over all subarrays entirely in $arr[l:m]$, $arr[m+1:r]$ and across the midpoint. We can find maximum subarrays of $arr[l:r]$ and $arr[m+1:r]$ recursively because these two subproblems are smaller instances of the original problem. All that is left is to find a maximum subarray crossing the midpoint and take a subarray with the largest sum of the three.\\
+\\
+The procedure for finding the max-crossing-subarray takes as input parameters $arr,l,m,r$. It works as follows:\\
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.70\textwidth]{Screenshot 2024-11-05 at 9.50.31 AM.png}
+\end{figure}
+First we find a maximum subarray in the left half - because it must contain the midpoint $arr[m]$, we start the for loop at $m$ and loop left towards $l$ so every left-sum will be a sum of an array of the form $arr[i:m]$. We do this by tracking the maximum left-sum and iteratively adding to the sum variable, setting left-sum = sum if sum is greater than left-sum. We also record the max-left - the index $i$ that maximizes left-sum. Similarly we do the same for the right side - iterating from $m+1$ to $r$ and save the max-right index $j$ such that the subarray $arr[j:r]$ has maximal sum. Finally, it follows that the maximum subarray amongst subarrays that cross the midpoint is the subarray $arr[max-left:max-right]$ with sum left-sum + right-sum. Clearly we see that this algorithm takes $\Theta(n)$ time because it is essentially two for loops in sequence and each iteration of a for loop takes $\Theta(1)$.
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.70\textwidth]{Screenshot 2024-11-05 at 10.27.12 AM.png}
+\end{figure}
+In the deepest level of recursion we reach individual elements - i.e. $[left]$, $[mid]$, $[right]$ which are trivially their own maximum subarrays. Each single elements is returned as its own subarray. We return up from the base cases and move up a level. At the next level we compare the possible subarrays - the left maximal subarray which in this case is just $[left]$, the right maximal subarray of which in this case is just $[right]$, and all subarrays containing the midpoint which would be $[left,mid]$, $[mid,right]$, $[left,mid,right]$. The maximal cross subarray routine finds the maximal subaray of the midpoint containing ones so we compare the result of this algorithm to the left maximal and right maximal. This allows us to return up another level with the maximal subarray amongst the maximal subarray entirely in the left, the maximal subarray entirely in the right, and the maximal crossing subarray. This is the maximal subarray spanning the entire $[left:right]$ (the end of the left side and the end of the right side passed into this level's FIND-MAXIMUM-SUBARRAY call. We continually do this until we have found the maximal subarray for the entire array.\\
+Now if we want to find the solution to the recurrence $T(n)$ - that is the running time of FIND-MAXIMUM-SUBARRAY on a subarray of $n$ elements we consider the following:\\
+First note that the base case $n=1$ is trivial and takes time $\Theta(1)$. Caclulating the midpoint also takes $\Theta(1)$ and then we reach the recursive calls. Notice that at each recursive step we solve two subproblems each of size $n/2$ and then we solve the FIND-MAX-CROSSING-SUBARRAY problem which we already analyzed and found to have runtime $\Theta(n)$. Finally, the act of comparing the subarrays to see which is largest is also $\Theta(1)$. We conclude:\\
+$$T(n)=\Theta(1)+2T(n/2)+\Theta(n)+\Theta(1)$$
+$$T(n)=2T(n/2)+\Theta(n).$$
+This is the same recurrence as merge sort so the solution to the recurrence is $T(n)=\Theta(n\log n)$.
 \end{document}
